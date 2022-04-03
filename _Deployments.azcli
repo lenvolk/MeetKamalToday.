@@ -1,0 +1,14 @@
+# Connect-AzAccount -EnvironmentName AzureUSGovernment
+#Log into Azure
+Add-AzAccount
+#Select the correct subscription
+Get-AzSubscription -SubscriptionName "AzIntConsumption" | Select-AzSubscription
+
+Disconnect-AzAccount
+
+===== Az CLI
+az cloud list --output table
+az cloud set --name AzureUSGovernment
+
+az login --only-show-errors -o table --query Dummy
+az account set -s AzIntConsumption

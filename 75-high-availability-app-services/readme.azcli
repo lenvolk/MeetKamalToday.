@@ -1,0 +1,46 @@
+$grp="LVEnvEastUSRG"
+$loc = 'eastus'
+$pln = 'lvappservicehatest'
+$serverName="primaryserver20220403"
+$databaseName="UsersDb"
+$backendapp1 = "lvhademo-webapp-eastus"
+$backendapp2 = "lvhademo-webapp-westus"
+
+# CREATING PRIMARY RESOURCES
+az group create --name $grp --location $loc --tags Type=Demo
+
+az sql server create -l $loc -g $grp -n $serverName -u lenvolk -p Pass@12345#
+az sql server firewall-rule create --name allowingall --server $serverName --resource-group $grp --start-ip-address 0.0.0.0 --end-ip-address 255.255.255.255
+az sql db create --resource-group $grp --server $serverName --name $databaseName --edition Standard --zone-redundant false --backup-storage-redundancy Local
+# Just for testing servelerless db
+az sql db create -g $grp -s $serverName -n serverlessdb `
+  -e GeneralPurpose -f Gen5 --min-capacity 0.5 -c 1 --compute-model Serverless --auto-pause-delay 60 --zone-redundant false --backup-storage-redundancy Local
+
+az appservice plan create --name $pln --resource-group $grp --location $loc --sku S1
+az webapp create --name $backendapp1 --plan $pln --resource-group $grp
+
+# CREATING SECONDARY RESOURCES
+$loc='westus'
+$grp="LVEnvWestUSRG"
+$serverName="secondaryserver20220403"
+az group create --name $grp --location $loc --tags Type=Demo
+
+az sql server create -l $loc -g $grp -n $serverName -u lenvolk -p Pass@12345#
+az sql server firewall-rule create --name allowingall --server $serverName --resource-group $grp --start-ip-address 0.0.0.0 --end-ip-address 255.255.255.255
+
+az appservice plan create --name $pln --resource-group $grp --location $loc --sku S1
+az webapp create --name $backendapp2 --plan $pln --resource-group $grp
+
+
+# CREATING RESOURCE GROUP FOR LOAD BALANCER
+$grp="LVLoadBalancerRG"
+$frontDoorName="fdoor20220218"
+
+az group create --name $grp --location $loc --tags Type=Demo
+
+# SETTING DB CONFIGURATION
+az webapp config appsettings set -g LVEnvEastUSRG -n $backendapp1 --settings DatabaseServer=usersdb-fg.database.windows.net
+az webapp config appsettings set -g LVEnvWestUSRG -n $backendapp2 --settings DatabaseServer=usersdb-fg.database.windows.net
+az webapp config appsettings set -g LVEnvEastUSRG -n $backendapp1 --settings Region="EastUS-Primary"
+az webapp config appsettings set -g LVEnvWestUSRG -n $backendapp2 --settings Region="WestUS-Secondary"
+```
