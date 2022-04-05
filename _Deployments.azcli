@@ -2,13 +2,15 @@
 #Log into Azure
 Add-AzAccount
 #Select the correct subscription
-Get-AzSubscription -SubscriptionName "AzIntConsumption" | Select-AzSubscription
+Get-AzSubscription -SubscriptionName "labsub" | Select-AzSubscription
 
 Disconnect-AzAccount
 
 ===== Az CLI
+az logout
 az cloud list --output table
 az cloud set --name AzureUSGovernment
+az cloud set --name  AzureCloud
 
 az login --only-show-errors -o table --query Dummy
-az account set -s AzIntConsumption
+az account set -s labsub
